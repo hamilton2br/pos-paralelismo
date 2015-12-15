@@ -1,3 +1,4 @@
+#include <mpi.h>
 #include <stdio.h>
 #include <dirent.h>
 #include <sys/types.h>
@@ -5,6 +6,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+
+#define SIGDIE 100
 
 //Estrutura de lista para manter a contagem de palavras
 struct lista_palavras_s{
@@ -112,12 +115,37 @@ void write_to_file(FILE *fp, const char* string){
         fprintf(fp, "%s\r\n", string);
 }
 
-//adiciona a lista de arquivos a serem lidos
-void write_to_file(FILE *fp, const char* string){
+void main(int argc, char* argv[]){
 
-        fprintf(fp, "%s\r\n", string);
-}
+	int nodes, rank, signal;
+	char buffer[1024];
 
-void main(){
-	//!!
+	MPI_Status status;
+	MPI_Comm parent;
+
+        MPI_Init(&argc, &argv);
+        MPI_Comm_size(MPI_COMM_WORLD, &nodes);
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	MPI_Comm_get_parent(&parent);
+
+	printf("leitor spawnado, meu rank: %d\r\n", rank);
+	fflush(stdout);
+	
+	MPI_Recv(buffer, 1024, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, parent, &status);
+	signal = status.MPI_TAG;
+
+	while(signal != SIGDIE){
+		printf("Arquivo para ler: %s\r\n", buffer);
+		fflush(stdout);
+
+		MPI_Recv(buffer, 1024, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, parent, &status);
+		signal = status.MPI_TAG;
+	}
+
+	
+	printf("received the kill signal\r\n");
+	fflush(stdout);
+	
+	MPI_Finalize();
 }

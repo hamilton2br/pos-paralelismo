@@ -9,6 +9,7 @@
 #include "mede_time.h"
 
 #define MAX_PROCS 4
+#define TAGDIE 100
 
 //verifica se estamos lhe dando com as referencias ao diretõrio atual ou o pai (. e ..)
 bool is_reference_dir(char* val){
@@ -72,21 +73,34 @@ void file_list(FILE *fp, char* basedir){
 }
 
 //lendo os arquivos e disparando os processos filhos
-void read_files(FILE* fpread, MPI_Comm leitores){
+void read_files(FILE* fpread){
 	char buffer[1024];
-	int i = 0;
+	int i;
 
-	//spawna um ajuntador que vai esperar a resposta da galera	
+	MPI_Comm leitores[MAX_PROCS];
 
-	for (i = 0; i < MAX_PROCS; i++){
-		//espawna os leitores e manda para cada um deles o nome de um arquivo para ler
+	//spawna um ajuntador que vai esperar a resposta da galera
+
+	//espawna os leitores e manda para cada um deles o nome de um arquivo para ler
+	for(i = 0; i < MAX_PROCS; i++){
+		if(fscanf(fpread, "%s", buffer) != EOF){
+			MPI_Comm_spawn("./conta_palavra_leitor", MPI_ARGV_NULL, 1, MPI_INFO_NULL, 0, MPI_COMM_SELF, &leitores[i], MPI_ERRCODES_IGNORE);
+			MPI_Send(buffer, 1024, MPI_CHAR, 0, 0, leitores[i]);
+		}
 	}
 
+	i = 0;
+
+	//espera terminarem esta primeira leva e manda mais
 	while (fscanf(fpread, "%s", buffer) != EOF){
-	
-		//espera algum processos sinalizar que terminou o processamento
-		//envia mais uma linha para ele ler
+		MPI_Send(buffer, 1024, MPI_CHAR, 0, 0, leitores[i]);
+		(i == (MAX_PROCS-1))? i = 0 : i++;
 	}
+
+	//manda os leitores morrerem
+        for(i = 0; i < MAX_PROCS; i++){
+		MPI_Send(buffer, 1024, MPI_CHAR, 0, 100, leitores[i]);
+        }
 }
 
 void main(int argc, char* argv[]){
@@ -103,9 +117,6 @@ void main(int argc, char* argv[]){
         MPI_Comm_size(MPI_COMM_WORLD, &nodes);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	MPI_Comm leitores;
-        MPI_Comm escritor;
-
 	//lista os arquivos a serem lidos	
 	fp=fopen("./files.txt", "w");
 	file_list(fp, argv[1]);
@@ -115,10 +126,16 @@ void main(int argc, char* argv[]){
 
 	//efetivamente ler os arquivos. Nesta funcao realizaremos a paralelizacao
 	fpread = fopen("./files.txt", "r");
-	read_files(fpread, leitores);
+	read_files(fpread);
 	fclose(fpread);
+
+	MPI_Finalize();
 
 	TIMER_STOP;
 	printf("Duracao: %.3f \r\n", TIMER_ELAPSED);
 	fflush(stdout);
+
+	char* c;
+
+	int ret = scanf("%c", c);
 }
