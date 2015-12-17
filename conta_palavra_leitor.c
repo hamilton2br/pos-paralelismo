@@ -115,6 +115,33 @@ void write_to_file(FILE *fp, const char* string){
         fprintf(fp, "%s\r\n", string);
 }
 
+//reading the files for word count
+void read_file(char buffer[1024]){
+        char infilebuffer[1024];
+        //lista_palavras_t* lista = NULL;
+
+        FILE* infile;
+
+        //FILE* outFile;
+        //outFile = fopen("./contagem.txt", "w");
+
+        //lista = cria_lista();
+
+	infile = fopen(buffer, "r");
+
+	while (fscanf(infile, "%s", infilebuffer) != EOF){
+		//trim(infilebuffer);
+		//tolowercase(infilebuffer);
+		//incrementa_contagem(infilebuffer, lista);
+	}
+
+	fclose(infile);
+
+        //lista_contagem(lista, outFile);
+        //destroi_lista(lista);
+        //fclose(outFile);
+}
+
 void main(int argc, char* argv[]){
 
 	int nodes, rank, signal;
@@ -136,16 +163,17 @@ void main(int argc, char* argv[]){
 	signal = status.MPI_TAG;
 
 	while(signal != SIGDIE){
-		printf("Arquivo para ler: %s\r\n", buffer);
-		fflush(stdout);
+		//aqui vamos realmente ler os arquivos
+		read_file(buffer);
 
 		MPI_Recv(buffer, 1024, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, parent, &status);
 		signal = status.MPI_TAG;
 	}
 
-	
 	printf("received the kill signal\r\n");
 	fflush(stdout);
+
+	//devolver o array para o no principal
 	
 	MPI_Finalize();
 }

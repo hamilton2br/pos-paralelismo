@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include "mede_time.h"
 
-#define MAX_PROCS 4
+#define MAX_PROCS 8
 #define TAGDIE 100
 
 //verifica se estamos lhe dando com as referencias ao diretõrio atual ou o pai (. e ..)
@@ -91,13 +91,13 @@ void read_files(FILE* fpread){
 
 	i = 0;
 
-	//espera terminarem esta primeira leva e manda mais
+	//espera terminarem esta primeira leva e manda mais, ate acabarem os arquivos para ler
 	while (fscanf(fpread, "%s", buffer) != EOF){
 		MPI_Send(buffer, 1024, MPI_CHAR, 0, 0, leitores[i]);
 		(i == (MAX_PROCS-1))? i = 0 : i++;
 	}
 
-	//manda os leitores morrerem
+	//manda os leitores morrerem e recolhe as respostas
         for(i = 0; i < MAX_PROCS; i++){
 		MPI_Send(buffer, 1024, MPI_CHAR, 0, 100, leitores[i]);
         }
