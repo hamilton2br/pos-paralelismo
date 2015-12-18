@@ -1,11 +1,12 @@
-#include <mpi.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
 #include <dirent.h>
 #include <sys/types.h>
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define SIGDIE 100
 
@@ -116,30 +117,20 @@ void write_to_file(FILE *fp, const char* string){
 }
 
 //reading the files for word count
-void read_file(char buffer[1024]){
+void read_file(char buffer[1024], FILE* outFilei, lista_palavras_t* lista){
         char infilebuffer[1024];
-        //lista_palavras_t* lista = NULL;
 
         FILE* infile;
-
-        //FILE* outFile;
-        //outFile = fopen("./contagem.txt", "w");
-
-        //lista = cria_lista();
 
 	infile = fopen(buffer, "r");
 
 	while (fscanf(infile, "%s", infilebuffer) != EOF){
-		//trim(infilebuffer);
-		//tolowercase(infilebuffer);
-		//incrementa_contagem(infilebuffer, lista);
+		trim(infilebuffer);
+		tolowercase(infilebuffer);
+		incrementa_contagem(infilebuffer, lista);
 	}
 
 	fclose(infile);
-
-        //lista_contagem(lista, outFile);
-        //destroi_lista(lista);
-        //fclose(outFile);
 }
 
 void main(int argc, char* argv[]){
@@ -156,15 +147,24 @@ void main(int argc, char* argv[]){
 
 	MPI_Comm_get_parent(&parent);
 
-	printf("leitor spawnado, meu rank: %d\r\n", rank);
+	printf("leitor spawnado\r\n");
 	fflush(stdout);
+
+	//Nome de arquivo para cada leitor
+	char filename[10];
+	sprintf(filename, "%d.txt", getpid());
+	FILE* outFile = fopen(filename, "w");
 	
+	//estrutura que guarda a contagem das palavras
+        lista_palavras_t* lista = NULL;
+        lista = cria_lista();
+
 	MPI_Recv(buffer, 1024, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, parent, &status);
 	signal = status.MPI_TAG;
 
 	while(signal != SIGDIE){
 		//aqui vamos realmente ler os arquivos
-		read_file(buffer);
+		read_file(buffer, outFile, lista);
 
 		MPI_Recv(buffer, 1024, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, parent, &status);
 		signal = status.MPI_TAG;
@@ -173,7 +173,10 @@ void main(int argc, char* argv[]){
 	printf("received the kill signal\r\n");
 	fflush(stdout);
 
-	//devolver o array para o no principal
-	
+	//Escrevendo o arquivo com a contagem
+        lista_contagem(lista, outFile);
+        destroi_lista(lista);
+	fclose(outFile);
+
 	MPI_Finalize();
 }

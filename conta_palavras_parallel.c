@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include "mede_time.h"
 
-#define MAX_PROCS 8
+#define MAX_PROCS 4
 #define TAGDIE 100
 
 //verifica se estamos lhe dando com as referencias ao diretõrio atual ou o pai (. e ..)
@@ -78,8 +78,6 @@ void read_files(FILE* fpread){
 	int i;
 
 	MPI_Comm leitores[MAX_PROCS];
-
-	//spawna um ajuntador que vai esperar a resposta da galera
 
 	//espawna os leitores e manda para cada um deles o nome de um arquivo para ler
 	for(i = 0; i < MAX_PROCS; i++){
