@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include "mede_time.h"
 
-#define MAX_PROCS 4
+#define MAX_PROCS 10
 #define TAGDIE 100
 
 //verifica se estamos lhe dando com as referencias ao diretõrio atual ou o pai (. e ..)
